@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sam Banele Mahlangu | Geomatics Portfolio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --green:      #00ff88;
+  --green-dim:  #00cc6a;
+  --green-glow: rgba(0,255,136,0.18);
+  --dark:       #030a06;
+  --dark2:      #060f09;
+  --mid:        #0a1a0f;
+  --mid2:       #0d2014;
+  --accent:     #1aff9c;
+  --muted:      rgba(0,255,136,0.45);
+  --muted2:     rgba(0,255,136,0.2);
+  --text:       #e8f5ec;
+  --text-dim:   rgba(232,245,236,0.62);
+  --text-faint: rgba(232,245,236,0.3);
+  --border:     rgba(0,255,136,0.12);
+  --border-hi:  rgba(0,255,136,0.38);
+}
+html { scroll-behavior: smooth; }
+body { background: var(--dark); color: var(--text); font-family: 'Syne', sans-serif; overflow-x: hidden; cursor: none; }
+
+/* CURSOR */
+#cursor { position: fixed; width: 10px; height: 10px; background: var(--green); border-radius: 50%; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); transition: width .2s, height .2s; mix-blend-mode: screen; }
+#cursor-ring { position: fixed; width: 36px; height: 36px; border: 1px solid var(--muted); border-radius: 50%; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width .25s, height .25s, border-color .2s; }
+#scanlines { position: fixed; inset: 0; z-index: 9990; pointer-events: none; background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px); }
+
+/* GLOBE STAGE */
+#globe-stage { position: fixed; inset: 0; z-index: 100; background: var(--dark); display: flex; align-items: center; justify-content: center; transition: opacity 1.4s ease; }
+#globe-stage.fade-out { opacity: 0; pointer-events: none; }
+#globe-stage.gone { display: none; }
+#globe-canvas { position: absolute; inset: 0; display: block; }
+
+.hud { position: absolute; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; line-height: 1.9; opacity: 0; transition: opacity .8s ease; }
+.hud.show { opacity: 1; }
+#hud-tl { top: 36px; left: 40px; }
+#hud-tr { top: 36px; right: 40px; text-align: right; }
+#hud-bl { bottom: 36px; left: 40px; }
+#hud-br { bottom: 36px; right: 40px; text-align: right; }
+
+.bracket { position: absolute; width: 28px; height: 28px; opacity: 0; transition: opacity .8s ease; }
+.bracket.show { opacity: 1; }
+.bracket svg { width: 100%; height: 100%; }
+#brk-tl { top: 28px; left: 28px; }
+#brk-tr { top: 28px; right: 28px; transform: scaleX(-1); }
+#brk-bl { bottom: 28px; left: 28px; transform: scaleY(-1); }
+#brk-br { bottom: 28px; right: 28px; transform: scale(-1,-1); }
+
+#crosshair { position: absolute; width: 64px; height: 64px; transform: translate(-50%,-50%); opacity: 0; transition: opacity .5s; pointer-events: none; }
+#crosshair.show { opacity: 1; }
+#crosshair svg { width: 100%; height: 100%; }
+
+#sa-label { position: absolute; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.17em; color: var(--green); background: rgba(3,10,6,0.88); border: 1px solid var(--border-hi); padding: 8px 16px; white-space: nowrap; transform: translate(24px,-50%); opacity: 0; transition: opacity .6s; pointer-events: none; }
+#sa-label.show { opacity: 1; }
+
+#globe-headline { position: absolute; bottom: 16%; left: 50%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity 1s ease; z-index: 10; white-space: nowrap; }
+#globe-headline.show { opacity: 1; }
+#globe-headline h2 { font-size: clamp(14px,2.2vw,22px); font-weight: 800; letter-spacing: .04em; color: var(--green); text-shadow: 0 0 40px rgba(0,255,136,.6); }
+#globe-headline p { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .24em; color: var(--muted); margin-top: 8px; text-transform: uppercase; }
+
+#skip-btn { position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .2em; color: var(--muted2); background: none; border: 1px solid var(--muted2); padding: 8px 20px; cursor: pointer; text-transform: uppercase; transition: color .3s, border-color .3s; z-index: 20; }
+#skip-btn:hover { color: var(--green); border-color: var(--green); }
+
+/* PORTFOLIO */
+#portfolio { opacity: 0; pointer-events: none; transition: opacity 1.4s ease .4s; }
+#portfolio.visible { opacity: 1; pointer-events: auto; }
+#portfolio::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(0,255,136,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.025) 1px,transparent 1px); background-size: 56px 56px; pointer-events: none; z-index: 0; }
+
+.inner { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 40px 100px; }
+
+/* NAV */
+nav { display: flex; align-items: center; justify-content: space-between; padding: 28px 0 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(3,10,6,.94); backdrop-filter: blur(14px); z-index: 50; margin: 0 -40px; padding-left: 40px; padding-right: 40px; }
+.nav-logo { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--green); letter-spacing: .18em; display: flex; align-items: center; gap: 10px; }
+.nav-logo::before { content: ''; display: block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: blink 2s step-start infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; color: var(--text-dim); text-decoration: none; text-transform: uppercase; transition: color .3s; cursor: none; }
+.nav-links a:hover { color: var(--green); }
+.nav-hire { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .14em; padding: 9px 20px; background: var(--green); color: var(--dark); border: none; cursor: none; font-weight: 700; text-transform: uppercase; transition: background .25s, transform .2s; text-decoration: none; }
+.nav-hire:hover { background: var(--accent); transform: translateY(-1px); }
+
+/* HERO */
+.hero { padding: 90px 0 70px; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+.hero::after { content: ''; position: absolute; top: 20px; right: -30px; width: 360px; height: 360px; border: 1px solid var(--border); border-radius: 50%; pointer-events: none; }
+.hero::before { content: ''; position: absolute; top: 80px; right: 80px; width: 200px; height: 200px; border: 1px solid rgba(0,255,136,.06); border-radius: 50%; pointer-events: none; }
+
+.hero-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .28em; color: var(--green); text-transform: uppercase; margin-bottom: 28px; display: flex; align-items: center; gap: 14px; opacity: 0; transform: translateY(16px); transition: all .7s ease; }
+.hero-tag.in { opacity:1; transform:none; }
+.hero-tag::before { content: ''; display: block; width: 40px; height: 1px; background: var(--green); }
+
+.hero-name { font-size: clamp(48px,7.5vw,88px); font-weight: 800; line-height: .92; letter-spacing: -.03em; margin-bottom: 20px; opacity: 0; transform: translateY(20px); transition: all .7s ease .12s; }
+.hero-name.in { opacity:1; transform:none; }
+.hero-name em { font-style: normal; color: var(--green); }
+
+.hero-sub { font-family: 'Space Mono', monospace; font-size: clamp(10px,1.3vw,12px); color: var(--text-dim); letter-spacing: .1em; margin-bottom: 36px; opacity: 0; transform: translateY(16px); transition: all .7s ease .22s; }
+.hero-sub.in { opacity:1; transform:none; }
+
+.hero-desc { font-size: clamp(14px,1.7vw,17px); color: var(--text-dim); line-height: 1.78; max-width: 540px; margin-bottom: 48px; opacity: 0; transform: translateY(16px); transition: all .7s ease .32s; }
+.hero-desc.in { opacity:1; transform:none; }
+
+.hero-cta { display: flex; gap: 16px; flex-wrap: wrap; opacity: 0; transform: translateY(16px); transition: all .7s ease .42s; }
+.hero-cta.in { opacity:1; transform:none; }
+
+.btn-primary { padding: 15px 36px; background: var(--green); color: var(--dark); font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; border: none; cursor: none; transition: all .25s; position: relative; overflow: hidden; }
+.btn-primary::after { content: ''; position: absolute; inset: 0; background: var(--accent); transform: translateX(-100%); transition: transform .3s ease; }
+.btn-primary:hover::after { transform: translateX(0); }
+.btn-primary span { position: relative; z-index: 1; }
+.btn-primary:hover { transform: translateY(-2px); }
+
+.btn-ghost { padding: 14px 36px; background: transparent; color: var(--green); font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; border: 1px solid var(--border-hi); cursor: none; transition: all .25s; }
+.btn-ghost:hover { background: var(--green-glow); border-color: var(--green); transform: translateY(-2px); }
+
+.hero-coords { position: absolute; right: 0; top: 80px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .15em; color: var(--text-faint); text-align: right; line-height: 2; }
+
+/* STATS */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--border); margin: 60px 0 0; background: var(--mid); opacity: 0; transform: translateY(20px); transition: all .7s ease; }
+.stats-row.in { opacity:1; transform:none; }
+.stat-cell { padding: 30px 22px; border-right: 1px solid var(--border); position: relative; overflow: hidden; transition: background .3s; }
+.stat-cell:last-child { border-right: none; }
+.stat-cell:hover { background: var(--mid2); }
+.stat-cell::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--green); transform: scaleX(0); transform-origin: left; transition: transform .4s ease; }
+.stat-cell:hover::before { transform: scaleX(1); }
+.stat-n { font-size: 38px; font-weight: 800; color: var(--green); line-height: 1; margin-bottom: 8px; }
+.stat-l { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .16em; color: var(--text-dim); text-transform: uppercase; }
+
+/* SECTION */
+.section { padding: 80px 0; border-bottom: 1px solid var(--border); opacity: 0; transform: translateY(28px); transition: all .8s ease; }
+.section.in { opacity:1; transform:none; }
+.sec-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 48px; gap: 20px; }
+.sec-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .25em; color: var(--green); text-transform: uppercase; margin-bottom: 10px; }
+.sec-title { font-size: clamp(26px,3.5vw,42px); font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+.sec-meta { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .12em; color: var(--text-faint); text-align: right; flex-shrink: 0; }
+
+/* PROJECTS */
+.projects-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+.proj-card { border: 1px solid var(--border); padding: 30px 26px; background: var(--dark2); position: relative; overflow: hidden; cursor: none; transition: border-color .35s, background .35s, transform .3s; display: flex; flex-direction: column; }
+.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,var(--green),transparent); transform: scaleX(0); transform-origin: left; transition: transform .45s ease; }
+.proj-card::after { content: attr(data-num); position: absolute; top: 20px; right: 20px; font-family: 'Space Mono', monospace; font-size: 30px; font-weight: 700; color: rgba(0,255,136,.05); line-height: 1; transition: color .35s; }
+.proj-card:hover { border-color: var(--border-hi); background: var(--mid); transform: translateY(-5px); }
+.proj-card:hover::before { transform: scaleX(1); }
+.proj-card:hover::after { color: rgba(0,255,136,.13); }
+.proj-card.featured { grid-column: span 2; flex-direction: row; gap: 36px; align-items: flex-start; }
+.proj-card.featured .proj-body { flex: 1; }
+.proj-card.featured .proj-visual { width: 240px; flex-shrink: 0; background: var(--mid2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; min-height: 165px; overflow: hidden; }
+
+.proj-tag { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .22em; color: var(--green); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.proj-tag::before { content: ''; display: block; width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+.proj-title { font-size: 19px; font-weight: 700; margin-bottom: 12px; letter-spacing: -.01em; }
+.proj-desc { font-size: 13px; color: var(--text-dim); line-height: 1.68; flex: 1; }
+.proj-stack { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 6px; }
+.stack-tag { font-family: 'Space Mono', monospace; font-size: 9px; padding: 5px 10px; border: 1px solid var(--muted2); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+/* CAROUSEL */
+.carousel-wrap { position: relative; overflow: hidden; background: var(--mid2); border: 1px solid var(--border); min-height: 165px; }
+.carousel-track { display: flex; transition: transform .42s cubic-bezier(.4,0,.2,1); will-change: transform; }
+.carousel-slide { min-width: 100%; height: 165px; display: flex; align-items: center; justify-content: center; }
+.carousel-slide img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: opacity 0.2s; }
+.carousel-slide img:hover { opacity: 0.9; }
+.car-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(3,10,6,.75); border: 1px solid var(--border-hi); color: var(--green); font-size: 20px; width: 28px; height: 36px; cursor: pointer; z-index: 5; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background .2s, border-color .2s; padding: 0; }
+.car-btn:hover { background: var(--green-glow); border-color: var(--green); }
+.car-prev { left: 4px; }
+.car-next { right: 4px; }
+.car-dots { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 5; }
+.car-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); border: 1px solid var(--border-hi); transition: background .25s; cursor: pointer; }
+.car-dot.active { background: var(--green); }
+
+/* YOUTUBE EMBED */
+.proj-yt-wrap { margin-bottom: 16px; }
+.proj-yt-thumb { position: relative; width: 100%; padding-top: 56.25%; background: var(--mid2); border: 1px solid var(--border); cursor: pointer; overflow: hidden; transition: border-color .3s; }
+.proj-yt-thumb:hover { border-color: var(--border-hi); }
+.proj-yt-thumb img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.yt-play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none; transition: transform .2s; z-index: 2; }
+.proj-yt-thumb:hover .yt-play-btn { transform: translate(-50%,-50%) scale(1.1); }
+.yt-label { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .14em; color: var(--muted); white-space: nowrap; pointer-events: none; z-index: 2; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 4px; }
+
+/* VIDEO MODAL */
+.video-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.96);
+  z-index: 10000;
+  justify-content: center;
+  align-items: center;
+}
+.video-modal.active { display: flex !important; }
+.video-modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 1000px;
+  background: #000;
+  border: 2px solid var(--green);
+  box-shadow: 0 0 50px rgba(0,255,136,0.3);
+}
+.video-modal-content iframe {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border: none;
+}
+.close-modal {
+  position: absolute;
+  top: -45px;
+  right: -10px;
+  color: var(--green);
+  font-size: 35px;
+  cursor: pointer;
+  font-family: monospace;
+  transition: color 0.2s;
+  z-index: 10001;
+}
+.close-modal:hover { color: white; }
+
+/* IMAGE MODAL - For carousel images */
+.image-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.96);
+  z-index: 20000;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.image-modal.active {
+  display: flex !important;
+}
+.image-modal-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  position: relative;
+}
+.image-modal-content img {
+  width: auto;
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border: 2px solid var(--green);
+  box-shadow: 0 0 50px rgba(0,255,136,0.3);
+}
+.image-modal-close {
+  position: absolute;
+  top: -50px;
+  right: -10px;
+  color: var(--green);
+  font-size: 40px;
+  cursor: pointer;
+  font-family: monospace;
+  transition: color 0.2s;
+  z-index: 20001;
+}
+.image-modal-close:hover {
+  color: white;
+}
+.image-modal-caption {
+  position: absolute;
+  bottom: -40px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+}
+.image-modal-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 0 20px;
+}
+.image-modal-prev,
+.image-modal-next {
+  pointer-events: auto;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-size: 30px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.image-modal-prev:hover,
+.image-modal-next:hover {
+  background: var(--green);
+  color: var(--dark);
+  transform: scale(1.1);
+}
+
+/* SKILLS */
+.skills-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.skill-group { border: 1px solid var(--border); padding: 24px 20px; background: var(--dark2); transition: border-color .3s, background .3s; }
+.skill-group:hover { border-color: var(--border-hi); background: var(--mid); }
+.skill-cat { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .22em; color: var(--green); text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.skill-bar-item { margin-bottom: 13px; }
+.skill-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+.skill-bar-label span { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+.skill-bar-track { height: 2px; background: var(--border); position: relative; overflow: hidden; }
+.skill-bar-fill { height: 100%; background: var(--green); width: 0; transition: width 1.3s ease; }
+.skill-group.animated .skill-bar-fill { width: var(--pct); }
+
+/* TOOLS */
+.tools-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; }
+.tool-badge { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .14em; padding: 9px 16px; border: 1px solid var(--border); color: var(--text-dim); background: var(--dark2); text-transform: uppercase; transition: all .25s; cursor: none; }
+.tool-badge:hover { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+
+/* ABOUT */
+.about-grid { display: grid; grid-template-columns: 1fr 300px; gap: 56px; align-items: start; }
+.about-text p { font-size: 15px; color: var(--text-dim); line-height: 1.82; margin-bottom: 18px; }
+.about-text p strong { color: var(--text); font-weight: 700; }
+.about-card { border: 1px solid var(--border); background: var(--dark2); }
+.about-card-head { padding: 18px 22px; border-bottom: 1px solid var(--border); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .2em; color: var(--green); text-transform: uppercase; }
+.about-card-body { padding: 18px 22px; }
+.about-card-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 12px; }
+.about-card-row:last-child { border-bottom: none; }
+.about-card-row .key { color: var(--text-dim); font-size: 12px; flex-shrink: 0; }
+.about-card-row .val { color: var(--green); font-family: 'Space Mono', monospace; font-size: 10px; text-align: right; }
+
+/* EXPERIENCE TIMELINE */
+.timeline { position: relative; }
+.timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--border); }
+.tl-item { display: grid; grid-template-columns: 150px 1fr; gap: 28px; padding: 30px 0 30px 28px; border-bottom: 1px solid var(--border); position: relative; }
+.tl-item::before { content: ''; position: absolute; left: -5px; top: 40px; width: 10px; height: 10px; background: var(--dark); border: 1px solid var(--green); border-radius: 50%; transition: background .3s; }
+.tl-item:hover::before { background: var(--green); }
+.tl-date { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .14em; color: var(--text-dim); text-transform: uppercase; padding-top: 4px; line-height: 1.9; }
+.tl-role { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.tl-org { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--green); letter-spacing: .1em; margin-bottom: 12px; }
+.tl-desc { font-size: 13px; color: var(--text-dim); line-height: 1.68; margin-left: 16px; }
+.tl-desc li { margin-left: 16px; margin-bottom: 6px; }
+
+/* CONTACT */
+.contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+.contact-text h3 { font-size: clamp(18px,2.5vw,28px); font-weight: 800; margin-bottom: 18px; letter-spacing: -.01em; }
+.contact-text p { font-size: 14px; color: var(--text-dim); line-height: 1.78; margin-bottom: 14px; }
+.contact-links { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.contact-link { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-dim); text-decoration: none; letter-spacing: .1em; display: flex; align-items: center; gap: 12px; padding: 13px 18px; border: 1px solid var(--border); background: var(--dark2); transition: all .25s; cursor: none; }
+.contact-link:hover { border-color: var(--border-hi); color: var(--green); background: var(--mid); transform: translateX(6px); }
+.contact-link .cl-icon { width: 20px; flex-shrink: 0; font-size: 12px; }
+.contact-link .cl-arrow { margin-left: auto; color: var(--green); opacity: 0; transition: opacity .25s; }
+.contact-link:hover .cl-arrow { opacity: 1; }
+
+.contact-form { display: flex; flex-direction: column; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+.form-group input, .form-group textarea { background: var(--dark2); border: 1px solid var(--border); color: var(--text); font-family: 'Syne', sans-serif; font-size: 14px; padding: 12px 16px; outline: none; transition: border-color .25s; resize: none; }
+.form-group input:focus, .form-group textarea:focus { border-color: var(--border-hi); }
+.form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-faint); }
+
+footer { padding: 40px 0; display: flex; align-items: center; justify-content: space-between; }
+.footer-logo { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-faint); letter-spacing: .15em; }
+.footer-copy { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-faint); letter-spacing: .15em; text-align: right; line-height: 1.8; }
+
+@media (max-width: 768px) {
+  .proj-card.featured { flex-direction: column; }
+  .proj-card.featured .proj-visual { width: 100%; }
+  .about-grid { grid-template-columns: 1fr; }
+  .contact-grid { grid-template-columns: 1fr; }
+  .skills-grid { grid-template-columns: 1fr; }
+  #hud-tr, #hud-br { display: none; }
+  .close-modal { top: -40px; right: 0; font-size: 30px; }
+  .image-modal-close { top: -40px; right: 0; font-size: 30px; }
+  .image-modal-prev, .image-modal-next { width: 35px; height: 35px; font-size: 20px; }
+}
+@media (max-width: 480px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .proj-card.featured { grid-column: span 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<div id="scanlines"></div>
+
+<!-- VIDEO MODAL -->
+<div id="videoModal" class="video-modal">
+  <div class="video-modal-content">
+    <span class="close-modal">&times;</span>
+    <iframe id="modalIframe" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
+  </div>
+</div>
+
+<!-- IMAGE MODAL FOR CAROUSEL -->
+<div id="imageModal" class="image-modal">
+  <div class="image-modal-content">
+    <span class="image-modal-close">&times;</span>
+    <img id="modalImage" src="" alt="">
+    <div class="image-modal-caption" id="modalCaption"></div>
+  </div>
+  <div class="image-modal-nav">
+    <button class="image-modal-prev" id="modalPrev">&#8249;</button>
+    <button class="image-modal-next" id="modalNext">&#8250;</button>
+  </div>
+</div>
+
+<!-- GLOBE INTRO -->
+<div id="globe-stage">
+  <canvas id="globe-canvas"></canvas>
+
+  <div class="bracket" id="brk-tl"><svg viewBox="0 0 28 28" fill="none"><path d="M28 0H0v28" stroke="#00ff88" stroke-width="1.5"/></svg></div>
+  <div class="bracket" id="brk-tr"><svg viewBox="0 0 28 28" fill="none"><path d="M28 0H0v28" stroke="#00ff88" stroke-width="1.5"/></svg></div>
+  <div class="bracket" id="brk-bl"><svg viewBox="0 0 28 28" fill="none"><path d="M28 0H0v28" stroke="#00ff88" stroke-width="1.5"/></svg></div>
+  <div class="bracket" id="brk-br"><svg viewBox="0 0 28 28" fill="none"><path d="M28 0H0v28" stroke="#00ff88" stroke-width="1.5"/></svg></div>
+
+  <div class="hud" id="hud-tl">
+    <div>SYS // SAM BANELE MAHLANGU · PORTFOLIO</div>
+    <div>INSTITUTION: TSHWANE UNIVERSITY OF TECHNOLOGY</div>
+    <div id="hud-status">STATUS: INITIALISING GLOBE...</div>
+  </div>
+  <div class="hud" id="hud-tr">
+    <div>PROJECTION: ORTHOGRAPHIC</div>
+    <div>DATUM: WGS84 · EPSG:4326</div>
+    <div>RENDERER: WEBGL 2.0</div>
+  </div>
+  <div class="hud" id="hud-bl">
+    <div id="hud-rot">ROTATION: 0.00°</div>
+    <div>FIELD: GEOMATICS</div>
+    <div>ENGINE: THREE.JS R128</div>
+  </div>
+  <div class="hud" id="hud-br">
+    <div id="hud-lat">LAT: ——.——°</div>
+    <div id="hud-lon">LON: ——.——°</div>
+    <div id="hud-alt">ALT: 6,400 km</div>
+  </div>
+
+  <div id="crosshair">
+    <svg viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="32" r="22" stroke="#00ff88" stroke-width="0.8" stroke-dasharray="4 3" opacity="0.6"/>
+      <circle cx="32" cy="32" r="4" stroke="#00ff88" stroke-width="1.2"/>
+      <line x1="32" y1="0" x2="32" y2="24" stroke="#00ff88" stroke-width="0.8" opacity="0.8"/>
+      <line x1="32" y1="40" x2="32" y2="64" stroke="#00ff88" stroke-width="0.8" opacity="0.8"/>
+      <line x1="0" y1="32" x2="24" y2="32" stroke="#00ff88" stroke-width="0.8" opacity="0.8"/>
+      <line x1="40" y1="32" x2="64" y2="32" stroke="#00ff88" stroke-width="0.8" opacity="0.8"/>
+      <path d="M20 8L8 8L8 20" stroke="#00ff88" stroke-width="1.2"/>
+      <path d="M44 8L56 8L56 20" stroke="#00ff88" stroke-width="1.2"/>
+      <path d="M20 56L8 56L8 44" stroke="#00ff88" stroke-width="1.2"/>
+      <path d="M44 56L56 56L56 44" stroke="#00ff88" stroke-width="1.2"/>
+    </svg>
+  </div>
+  <div id="sa-label">◆ PRETORIA · LAT -25.7° LON 28.2° · SOUTH AFRICA</div>
+
+  <div id="globe-headline">
+    <h2>Geospatial Solutions Engineered in South Africa</h2>
+    <p>Pretoria · Tshwane · Gauteng · South Africa</p>
+  </div>
+
+  <button id="skip-btn" onclick="skipIntro()">[ SKIP INTRO ]</button>
+</div>
+
+<!-- PORTFOLIO -->
+<div id="portfolio">
+  <div class="inner">
+
+    <nav>
+      <div class="nav-logo">SAM.MAHLANGU</div>
+      <div class="nav-links">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#skills">Skills</a>
+        <a href="#experience">Experience</a>
+        <a href="#contact">Contact</a>
+        <a href="#contact" class="nav-hire">Hire Me →</a>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <div class="hero-coords">
+        LAT -25.7° S<br>LON 28.2° E<br>PRETORIA, ZA
+      </div>
+      <div class="hero-tag">Geomatics Graduate <br> Geospatial Analyst <br> Land Surveyor</div>
+      <div class="hero-name">Sam<br><em>Banele</em><br>Mahlangu</div>
+      <div class="hero-sub">
+        Bachelor of Geomatics · PGDip Geomatics · Tshwane University of Technology &nbsp;·&nbsp; Pretoria, South Africa
+      </div>
+      <p class="hero-desc">
+        Geomatics graduate with hands-on experience in GIS, surveying and spatial data analysis, applying geospatial techniques to infrastructure, mining, and land development challenges. Focused on integrating AI with GIS to automate workflows, enhance spatial analysis and deliver smarter, data-driven solutions.
+      </p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="document.getElementById('projects').scrollIntoView({behavior:'smooth'})">
+          <span>View My Work →</span>
+        </button>
+        <button class="btn-ghost" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">
+          Get In Touch
+        </button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-n" data-count="0">0</div>
+          <div class="stat-l">Years Experience</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-n" data-count="4">0</div>
+          <div class="stat-l">GIS Tools Mastered</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-n" data-count="3">0</div>
+          <div class="stat-l">Roles & Positions</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-n" data-count="2">0</div>
+          <div class="stat-l">Degrees Earned</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="sec-head">
+        <div>
+          <div class="sec-label">01 // About</div>
+          <div class="sec-title">Who I Am</div>
+        </div>
+        <div class="sec-meta">Pretoria, South Africa</div>
+      </div>
+      <div class="about-grid">
+        <div class="about-text">
+          <p>
+            I am <strong>Sam Banele Mahlangu</strong>, a Geomatics graduate from 
+            <strong>Tshwane University of Technology</strong>, I hold a <strong>Bachelor of Geomatics</strong> and
+            a <strong>Postgraduate Diploma in Geomatics</strong>.
+          </p>
+          <p>
+            My passion lies at the intersection of spatial technology and real-world problem solving. 
+            From <strong>land surveying, GIS analysis, spatial data modelling </strong> and mentoring geomatics students  
+             I bring both technical depth and a collaborative spirit to every challenge.
+          </p>
+          <p>
+            I am eager to collaborate with diverse teams, embrace new challenges, and apply 
+            analytical thinking to deliver effective geospatial solutions across South Africa and beyond. 
+            My goal is to grow as a versatile professional who can adapt to evolving spatial technologies 
+            and contribute value across various sectors.
+          </p>
+          <div class="tools-grid">
+            <div class="tool-badge">ArcGIS</div>
+            <div class="tool-badge">QGIS</div>
+            <div class="tool-badge">ArcMap</div>
+            <div class="tool-badge">Google Earth Engine</div>
+            <div class="tool-badge">Google Colab</div>
+            <div class="tool-badge">Python</div>
+            <div class="tool-badge">Total Station</div>
+            <div class="tool-badge">GNSS</div>
+            <div class="tool-badge">Auto Level</div>
+            <div class="tool-badge">Precise Level</div>
+          </div>
+        </div>
+        <div>
+          <div class="about-card">
+            <div class="about-card-head">// Profile Data</div>
+            <div class="about-card-body">
+              <div class="about-card-row">
+                <span class="key">Name</span>
+                <span class="val">Sam Banele Mahlangu</span>
+              </div>
+              <div class="about-card-row">
+                <span class="key">Phone</span>
+                <span class="val">+27 76 050 0860</span>
+              </div>
+              <div class="about-card-row">
+                <span class="key">Degree</span>
+                <span class="val">BGeomatics & PGDip Geomatics</span>
+              </div>
+              <div class="about-card-row">
+                <span class="key">Institution</span>
+                <span class="val">TUT</span>
+              </div>
+              <div class="about-card-row">
+                <span class="key">Availability</span>
+                <span class="val">Open to Work</span>
+              </div>
+              <div class="about-card-row">
+                <span class="key">Remote</span>
+                <span class="val">Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section class="section" id="projects">
+      <div class="sec-head">
+        <div>
+          <div class="sec-label">02 // Projects</div>
+          <div class="sec-title">Featured Work</div>
+        </div>
+        <div class="sec-meta">Geospatial Solutions</div>
+      </div>
+      <div class="projects-grid">
+
+        <!-- 01: Mine Stability Analysis — Carousel with Modal -->
+        <div class="proj-card featured" data-num="01">
+          <div class="proj-body">
+            <span class="proj-tag">Industry · Mine GIS</span>
+            <div class="proj-title">Mine Stability Analysis — Goedehoop Colliery</div>
+            <p class="proj-desc">
+              Conducted a GIS-based underground stability assessment at Goedehoop Colliery (Dec 2024 – Jan 2025), using subsidence, seam depth, and geotechnical parameters to evaluate ground conditions. Spatial overlay and rule based classification were used to identify stable, moderately stable and high risk areas. <br> Approximately 353 hectares were identified as high risk, mainly linked to 2 seam workings, with additional smaller high risk areas from 5 seam and subsidence. More than 3000 hectares were found suitable for controlled post mining land use.
+            </p>
+<div class="proj-stack" style="margin-top: 15px;">
+  <a href="GH-SAM Mahlangu.pdf" download class="stack-tag" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+    📄 Download Presentation (PDF)
+  </a>
+</div>
+            <div class="proj-stack">
+              <span class="stack-tag">QGIS</span>
+              <span class="stack-tag">Risk Modelling</span>
+              <span class="stack-tag">Spatial Analysis</span>
+              <span class="stack-tag">Mine Rehabilitation</span>
+            </div>
+          </div>
+          <div class="proj-visual carousel-wrap" id="carousel-01">
+            <div class="carousel-track">
+              <div class="carousel-slide">
+                <img src="images/mine-stability-1.jpg" alt="Stability Classification Map" onclick="openImageModal('carousel-01', 0)">
+              </div>
+              <div class="carousel-slide">
+                <img src="images/mine-stability-2.jpg" alt="Subsurface Panel Map" onclick="openImageModal('carousel-01', 1)">
+              </div>
+              <div class="carousel-slide">
+                <img src="images/mine-stability-3.jpg" alt="Risk Profile Section" onclick="openImageModal('carousel-01', 2)">
+              </div>
+            </div>
+            <button class="car-btn car-prev" onclick="carMove('carousel-01',-1)">&#8249;</button>
+            <button class="car-btn car-next" onclick="carMove('carousel-01',1)">&#8250;</button>
+            <div class="car-dots" id="dots-carousel-01">
+              <span class="car-dot active"></span><span class="car-dot"></span><span class="car-dot"></span>
+            </div>
+          </div>
+        </div>
+
+       
+        
+        <!-- 02: Road Analysis — YouTube -->
+        <div class="proj-card" data-num="02">
+          <span class="proj-tag">Infrastructure · Transport GIS</span>
+          <div class="proj-title">Road Analysis</div>
+          <div class="proj-yt-wrap">
+            <div class="proj-yt-thumb" onclick="openVideoModal('CPsHghxbGFQ')">
+              <img src="images/road-analysis.jpg" alt="Road Condition Survey" onerror="this.src='https://placehold.co/640x360/0a1a0f/00ff88?text=Road+Analysis+Demo'">
+              <div class="yt-play-btn">
+                <svg viewBox="0 0 68 48" width="56" height="40">
+                  <path d="M66.5 7.7c-.8-2.9-3-5.2-5.9-6C55.8.1 34 0 34 0S12.2.1 7.4 1.7c-2.9.8-5.1 3.1-5.9 6C0 12.5 0 24 0 24s0 11.5 1.5 16.3c.8 2.9 3 5.2 5.9 6C12.2 47.9 34 48 34 48s21.8-.1 26.6-1.7c2.9-.8 5.1-3.1 5.9-6C68 35.5 68 24 68 24S68 12.5 66.5 7.7z" fill="#ff0000" opacity="0.9"/>
+                  <path d="M27 34l18-10-18-10v20z" fill="white"/>
+                </svg>
+              </div>
+              <div class="yt-label">▶ Watch Demo</div>
+            </div>
+          </div>
+          <p class="proj-desc">
+            Spatial analysis of road network conditions and infrastructure quality using GIS-based 
+            assessment techniques. Classified road segments by condition rating, identified priority 
+            maintenance zones for infrastructure planning.
+          </p>
+          <div class="proj-stack">
+            <span class="stack-tag">QGIS</span>
+            <span class="stack-tag">Network Analysis</span>
+            <span class="stack-tag">Infrastructure GIS</span>
+            <span class="stack-tag">Spatial Classification</span>
+          </div>
+        </div>
+
+        <!-- 03: Construction Monitoring — Carousel with Modal -->
+        <div class="proj-card featured" data-num="05">
+          <div class="proj-body">
+            <span class="proj-tag">Infrastructure · Remote Sensing</span>
+            <div class="proj-title">Construction Monitoring</div>
+            <p class="proj-desc">
+              Geospatial monitoring of construction progress using multi-temporal satellite imagery 
+              and change detection techniques. Tracked land transformation, site development phases, 
+              and earthworks activity.            </p>
+            <div class="proj-stack">
+              <span class="stack-tag">Remote Sensing</span>
+              <span class="stack-tag">Change Detection</span>
+              <span class="stack-tag">QGIS</span>
+              <span class="stack-tag">Satellite Imagery</span>
+            </div>
+          </div>
+          <div class="proj-visual carousel-wrap" id="carousel-05">
+            <div class="carousel-track">
+              <div class="carousel-slide">
+                <img src="images/construction-1.jpg" alt="Site Clearance Phase" onclick="openImageModal('carousel-05', 0)">
+              </div>
+              <div class="carousel-slide">
+                <img src="images/construction-2.jpg" alt="Foundations Phase" onclick="openImageModal('carousel-05', 1)">
+              </div>
+              <div class="carousel-slide">
+                <img src="images/construction-3.jpg" alt="Structure Complete" onclick="openImageModal('carousel-05', 2)">
+              </div>
+ <div class="carousel-slide">
+                <img src="images/construction-4.jpg" alt="Structure Complete" onclick="openImageModal('carousel-05', 3)">
+              </div>
+ <div class="carousel-slide">
+                <img src="images/construction-5.jpg" alt="Structure Complete" onclick="openImageModal('carousel-05', 4)">
+              </div>
+
+            </div>
+            <button class="car-btn car-prev" onclick="carMove('carousel-05',-1)">&#8249;</button>
+            <button class="car-btn car-next" onclick="carMove('carousel-05',1)">&#8250;</button>
+            <div class="car-dots" id="dots-carousel-05">
+              <span class="car-dot active"></span><span class="car-dot"></span><span class="car-dot"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section" id="skills">
+      <div class="sec-head">
+        <div>
+          <div class="sec-label">03 // Skills</div>
+          <div class="sec-title">Technical Expertise</div>
+        </div>
+        <div class="sec-meta">Proficiency Index</div>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-group">
+          <div class="skill-cat">GIS Software</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">ArcGIS / ArcMap <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:88%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">QGIS <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:85%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Google Earth Engine <span>Intermediate</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:70%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Model Maker <span>Beginner</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:30%"></div></div></div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-cat">Surveying</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Total Station <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:88%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Auto Level <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:85%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">GNSS <span>Intermediate</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:70%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Precise Level <span>Intermediate</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:75%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Field Data Collection <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:82%"></div></div></div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-cat">Remote Sensing</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Satellite Imagery Processing <span>Beginner–Inter.</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:50%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Aerial Photo Analysis <span>Beginner–Inter.</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:55%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Environmental Monitoring <span>Beginner–Inter.</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:55%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Urban Planning Analysis <span>Beginner–Inter.</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:55%"></div></div></div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-cat">Spatial Analysis</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Geospatial Data Analysis <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:85%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Risk-Based Modelling <span>Intermediate</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:72%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Map & Report Production <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:88%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Spatial Data Management <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:82%"></div></div></div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-cat">Programming</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Python (GIS Automation) <span>Beginner–Inter.</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:52%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">ROS (Robotics) <span>Beginner</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:38%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Spatial Scripting <span>Beginner</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:44%"></div></div></div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-cat">Professional</div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Team Collaboration <span>Expert</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:95%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Academic Mentorship <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:88%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Fast Learning <span>Expert</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:95%"></div></div></div>
+          <div class="skill-bar-item"><div class="skill-bar-label">Technical Communication <span>Advanced</span></div><div class="skill-bar-track"><div class="skill-bar-fill" style="--pct:85%"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="section" id="experience">
+      <div class="sec-head">
+        <div>
+          <div class="sec-label">04 // Experience</div>
+          <div class="sec-title">Career Timeline</div>
+        </div>
+        <div class="sec-meta">Chronological</div>
+      </div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-date">Dec 2024 –<br>Jan 2025</div><div><div class="tl-role">Geomatics Student (Vacation Work)</div><div class="tl-org">// Thungela — Goedehoop Colliery Mine</div><ul class="tl-desc"><li>Conducted underground stability analysis to identify areas prone to subsidence and soil instability using risk-based modelling and spatial analysis techniques.</li><li>Utilised GIS-based mapping to classify stable, moderately stable and unstable zones throughout the mine.</li><li>Proposed evidence-based rehabilitation strategies for unstable zones to ensure safe mine closure and guide future land use.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">Jan 2023 –<br>Dec 2025</div><div><div class="tl-role">Academic Mentor</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Provided academic support and mentorship to junior Geomatics students, assisting with coursework, practical GIS projects and exam preparation.</li><li>Assisted students in navigating university resources and building connections with faculty and peers, creating a supportive learning environment.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">Feb 2025 -<br>Dec 2025</div><div><div class="tl-role">Student Assistant — Land Surveying</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Provides practical assistance to undergraduate Geomatics and Civil Engineering students during surveying field sessions.</li><li>Guides students in the correct use of total stations, auto levels and precise levels during practicals.</li><li>Promotes a collaborative learning environment that improves student confidence in applied surveying techniques.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">Jan 2023 –<br>Dec 2024</div><div><div class="tl-role">Executive Member — Geomatics Student Society</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Participated in networking events with industry professionals, enhancing knowledge of the geomatics industry.</li><li>Part of outreach initiatives to increase awareness of geomatics as a field and inspire STEM interest among younger students.</li><li>Collaborated with the team to promote unity and engagement among students, fostering academic and personal growth.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">Nov – Dec 2023</div><div><div class="tl-role">Robotic Skills Development (ROS)</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Completed a 5-day intensive programme in Robot Operating System (ROS) programming.</li><li>Applied theoretical knowledge to create functional robotic systems for real-world applications.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">2022 – 2024</div><div><div class="tl-role">Bachelor of Geomatics</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Completed a three-year Bachelor of Geomatics covering GIS, remote sensing, photogrammetry, surveying, spatial data management and cartography.</li><li>Developed proficiency in ArcGIS, QGIS, Google Earth Engine and field surveying instruments.</li></ul></div></div>
+        <div class="tl-item"><div class="tl-date">2025 - Completed</div><div><div class="tl-role">Postgraduate Diploma in Geomatics</div><div class="tl-org">// Tshwane University of Technology</div><ul class="tl-desc"><li>Advanced training in satellite surveying, engineering surveying, GIS, and geomatics data science.</li><li>Applied geospatial techniques to survey data processing, spatial analysis, and project-based problem solving in infrastructure, land development, and planning contexts.</li></ul></div></div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact">
+      <div class="sec-head">
+        <div>
+          <div class="sec-label">05 // Contact</div>
+          <div class="sec-title">Let's Work Together</div>
+        </div>
+        <div class="sec-meta">Open to Opportunities</div>
+      </div>
+      <div class="contact-grid">
+        <div>
+          <div class="contact-text">
+            <h3>Open to geospatial opportunities across South Africa and beyond.</h3>
+            <p>Whether you're looking for a GIS analyst, junior land surveyor or geomatics graduate ready to make an impact I'd love to discuss how I can contribute to your team or project.</p>
+            <p>Willing to <strong>Relocate</strong> . Available for remote collaboration, graduate programmes, internships and permanent positions.</p>
+          </div>
+          <div class="contact-links">
+            <a href="mailto:sambanele860@gmail.com" class="contact-link"><span class="cl-icon">@</span>sambanele860@gmail.com<span class="cl-arrow">→</span></a>
+            <a href="tel:+27760500860" class="contact-link"><span class="cl-icon">#</span>+27 76 050 0860<span class="cl-arrow">→</span></a>
+            <a href="https://www.linkedin.com/in/sam-mahlangu-666053276" class="contact-link"><span class="cl-icon">in</span>LinkedIn Profile<span class="cl-arrow">→</span></a>
+            <a href="cv.pdf" class="contact-link" id="cv-download-link"><span class="cl-icon">↓</span>Download CV (PDF)<span class="cl-arrow">→</span></a>
+          </div>
+        </div>
+        <div>
+          <div class="contact-form" id="contact-form">
+            <div class="form-group"><label>Your Name</label><input type="text" id="contact-name" placeholder="Sam Mahlangu"></div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="contact-email" placeholder="sam@company.com"></div>
+            <div class="form-group"><label>Subject</label><input type="text" id="contact-subject" placeholder="GIS Analyst Position / Project Inquiry"></div>
+            <div class="form-group"><label>Message</label><textarea id="contact-message" rows="5" placeholder="Tell me about your geospatial challenge or opportunity..."></textarea></div>
+            <button class="btn-primary" style="width:100%;text-align:center;" onclick="sendContactMessage()"><span>Send Message →</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="footer-logo">// SAM BANELE MAHLANGU · GEOMATICS · SOUTH AFRICA</div>
+      <div class="footer-copy">Geomatics ·<br>&copy; 2026 · All Rights Reserved</div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+// ============================================
+// VIDEO MODAL FUNCTIONS
+// ============================================
+function openVideoModal(videoId) {
+  if(!videoId) return;
+  const modal = document.getElementById('videoModal');
+  const iframe = document.getElementById('modalIframe');
+  iframe.src = 'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0';
+  modal.style.display = 'flex';
+  modal.classList.add('active');
+}
+
+function closeVideoModal() {
+  const modal = document.getElementById('videoModal');
+  const iframe = document.getElementById('modalIframe');
+  iframe.src = '';
+  modal.style.display = 'none';
+  modal.classList.remove('active');
+}
+
+document.querySelector('.close-modal')?.addEventListener('click', closeVideoModal);
+document.getElementById('videoModal')?.addEventListener('click', (e) => {
+  if(e.target === document.getElementById('videoModal')) closeVideoModal();
+});
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeVideoModal(); });
+
+// ============================================
+// IMAGE MODAL FOR CAROUSEL
+// ============================================
+let currentModalCarousel = null;
+let currentModalIndex = 0;
+let modalSlides = [];
+
+function openImageModal(carouselId, slideIndex) {
+  currentModalCarousel = carouselId;
+  currentModalIndex = slideIndex;
+  
+  const carousel = document.getElementById(carouselId);
+  if (!carousel) return;
+  
+  const slides = carousel.querySelectorAll('.carousel-slide img');
+  modalSlides = slides;
+  
+  updateModalImage();
+  
+  const modal = document.getElementById('imageModal');
+  modal.classList.add('active');
+}
+
+function updateModalImage() {
+  const img = modalSlides[currentModalIndex];
+  const modalImg = document.getElementById('modalImage');
+  const caption = document.getElementById('modalCaption');
+  
+  if (img) {
+    modalImg.src = img.src;
+    modalImg.alt = img.alt || 'Project image';
+    caption.textContent = `Image ${currentModalIndex + 1} of ${modalSlides.length} | ${img.alt || ''}`;
+  }
+}
+
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  modal.classList.remove('active');
+  currentModalCarousel = null;
+  currentModalIndex = 0;
+  modalSlides = [];
+}
+
+function nextModalImage() {
+  if (modalSlides.length > 0) {
+    currentModalIndex = (currentModalIndex + 1) % modalSlides.length;
+    updateModalImage();
+  }
+}
+
+function prevModalImage() {
+  if (modalSlides.length > 0) {
+    currentModalIndex = (currentModalIndex - 1 + modalSlides.length) % modalSlides.length;
+    updateModalImage();
+  }
+}
+
+document.getElementById('imageModal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('imageModal')) closeImageModal();
+});
+document.querySelector('.image-modal-close')?.addEventListener('click', closeImageModal);
+document.getElementById('modalPrev')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  prevModalImage();
+});
+document.getElementById('modalNext')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  nextModalImage();
+});
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('imageModal');
+  if (modal.classList.contains('active')) {
+    if (e.key === 'Escape') closeImageModal();
+    if (e.key === 'ArrowLeft') prevModalImage();
+    if (e.key === 'ArrowRight') nextModalImage();
+  }
+});
+
+// ============================================
+// CAROUSEL
+// ============================================
+const carState = {};
+function carMove(id, dir) {
+  const wrap = document.getElementById(id);
+  if(!wrap) return;
+  const track = wrap.querySelector('.carousel-track');
+  const slides = wrap.querySelectorAll('.carousel-slide');
+  const dots = document.getElementById('dots-' + id);
+  if(!carState[id]) carState[id] = 0;
+  carState[id] = (carState[id] + dir + slides.length) % slides.length;
+  track.style.transform = 'translateX(-' + carState[id] * 100 + '%)';
+  if(dots) {
+    dots.querySelectorAll('.car-dot').forEach((d, i) => d.classList.toggle('active', i === carState[id]));
+  }
+}
+
+// Initialize carousel dots
+document.querySelectorAll('.car-dots').forEach(dotsEl => {
+  const id = dotsEl.id.replace('dots-', '');
+  dotsEl.querySelectorAll('.car-dot').forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      const wrap = document.getElementById(id);
+      if (!wrap) return;
+      const track = wrap.querySelector('.carousel-track');
+      if (!carState[id]) carState[id] = 0;
+      carState[id] = i;
+      track.style.transform = 'translateX(-' + i * 100 + '%)';
+      dotsEl.querySelectorAll('.car-dot').forEach((d, j) => d.classList.toggle('active', j === i));
+    });
+  });
+});
+
+// ============================================
+// CURSOR
+// ============================================
+const cursor = document.getElementById('cursor'), ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function tick() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(tick);
+})();
+document.querySelectorAll('a,button,.proj-card,.tool-badge,.contact-link,.stat-cell,.carousel-slide img').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.width = '18px';
+    cursor.style.height = '18px';
+    ring.style.width = '50px';
+    ring.style.height = '50px';
+    ring.style.borderColor = 'rgba(0,255,136,.7)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.width = '10px';
+    cursor.style.height = '10px';
+    ring.style.width = '36px';
+    ring.style.height = '36px';
+    ring.style.borderColor = 'rgba(0,255,136,.45)';
+  });
+});
+
+// ============================================
+// THREE.JS GLOBE
+// ============================================
+(function() {
+  const canvas = document.getElementById('globe-canvas');
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 1000);
+  cam.position.set(0, 0, 3.4);
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0x030a06, 1);
+  scene.add(new THREE.AmbientLight(0x00ff88, 0.08));
+  const sun = new THREE.DirectionalLight(0x00ff88, 0.6);
+  sun.position.set(6, 4, 6);
+  scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x002208, 0.3);
+  rim.position.set(-4, -2, -4);
+  scene.add(rim);
+  const gGeo = new THREE.SphereGeometry(1, 72, 72);
+  const gMat = new THREE.MeshPhongMaterial({ color: 0x010801, emissive: 0x001205, specular: 0x00ff88, shininess: 8 });
+  const globe = new THREE.Mesh(gGeo, gMat);
+  scene.add(globe);
+  const wMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, opacity: 0.055, transparent: true });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.001, 36, 18), wMat));
+  const atmMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0.04, side: THREE.BackSide });
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.08, 64, 64), atmMat));
+  function gridLine(type, val, steps, op) {
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      let la, lo;
+      if (type === 'lat') { la = val; lo = (i / steps) * 360 - 180; }
+      else { la = (i / steps) * 180 - 90; lo = val; }
+      const phi = THREE.MathUtils.degToRad(90 - la);
+      const th = THREE.MathUtils.degToRad(lo + 180);
+      pts.push(new THREE.Vector3(1.003 * Math.sin(phi) * Math.cos(th), 1.003 * Math.cos(phi), 1.003 * Math.sin(phi) * Math.sin(th)));
+    }
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x00ff88, transparent: true, opacity: op })));
+  }
+  for (let la = -80; la <= 80; la += 20) gridLine('lat', la, 180, la === 0 ? 0.45 : la === -25.7 ? 0.35 : 0.12);
+  for (let la = -80; la <= 80; la += 10) if (la % 20 !== 0) gridLine('lat', la, 180, 0.05);
+  for (let lo = -180; lo < 180; lo += 20) gridLine('lon', lo, 180, lo === 28 ? 0.3 : lo % 60 === 0 ? 0.18 : 0.07);
+  const sv = [];
+  for (let i = 0; i < 1800; i++) {
+    const t = Math.random() * Math.PI * 2, p = Math.acos(2 * Math.random() - 1), r = 60 + Math.random() * 80;
+    sv.push(r * Math.sin(p) * Math.cos(t), r * Math.cos(p), r * Math.sin(p) * Math.sin(t));
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sv, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.15, transparent: true, opacity: 0.35 });
+  scene.add(new THREE.Points(sg, starMat));
+  function ll(la, lo, r) {
+    const phi = THREE.MathUtils.degToRad(90 - la), th = THREE.MathUtils.degToRad(lo + 180);
+    return new THREE.Vector3(r * Math.sin(phi) * Math.cos(th), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(th));
+  }
+  const saVec = ll(-25.7, 28.2, 1.025);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), dotMat);
+  dot.position.copy(saVec);
+  dot.visible = false;
+  scene.add(dot);
+  const pulseMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, transparent: true, opacity: 0, side: THREE.DoubleSide });
+  const pulse = new THREE.Mesh(new THREE.RingGeometry(0.035, 0.05, 32), pulseMat);
+  pulse.position.copy(saVec);
+  pulse.lookAt(0, 0, 0);
+  scene.add(pulse);
+  const camStart = new THREE.Vector3(0, 0, 3.4);
+  const camTarget = new THREE.Vector3(-0.9, -0.6, 0.7).normalize().multiplyScalar(2.45);
+  let phase = 'rotate', phaseT = 0, pulseT = 0, done = false;
+  const clock = new THREE.Clock();
+  const hudStatus = document.getElementById('hud-status');
+  const hudRot = document.getElementById('hud-rot');
+  const hudLat = document.getElementById('hud-lat');
+  const hudLon = document.getElementById('hud-lon');
+  const hudAlt = document.getElementById('hud-alt');
+  setTimeout(() => document.querySelectorAll('.hud,.bracket').forEach(el => el.classList.add('show')), 600);
+  window.addEventListener('resize', () => { cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+  function eio(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function eo(t) { return 1 - Math.pow(1 - t, 3); }
+  function tick() {
+    requestAnimationFrame(tick);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    phaseT += dt;
+    if (phase === 'rotate') {
+      globe.rotation.y += 0.004;
+      const deg = (globe.rotation.y * 180 / Math.PI % 360).toFixed(1);
+      hudRot.textContent = `ROTATION: ${Math.abs(deg)}°`;
+      hudLat.textContent = 'LAT: SCANNING...';
+      hudLon.textContent = `LON: ${Math.abs(deg)}°`;
+      if (phaseT > 4) { phase = 'zoom'; phaseT = 0; hudStatus.textContent = 'TARGETING: PRETORIA · SOUTH AFRICA'; }
+    } else if (phase === 'zoom') {
+      const p = Math.min(phaseT / 3.8, 1), e = eio(p);
+      globe.rotation.y += 0.004 * (1 - e * 0.9);
+      globe.rotation.x = -0.22 * e;
+      cam.position.lerpVectors(camStart, camTarget, e);
+      cam.lookAt(0, 0, 0);
+      hudAlt.textContent = `ALT: ${Math.round(6400 - 3900 * e).toLocaleString()} km`;
+      hudLat.textContent = `LAT: ${(-25.7 * e).toFixed(1)}° S`;
+      hudLon.textContent = `LON: ${(28.2 * e).toFixed(1)}° E`;
+      if (p >= 1) {
+        phase = 'highlight';
+        phaseT = 0;
+        dot.visible = true;
+        hudStatus.textContent = 'LOCK: LAT -25.7° S  LON 28.2° E  |  PRETORIA, ZA';
+        document.getElementById('crosshair').classList.add('show');
+        document.getElementById('sa-label').classList.add('show');
+        document.getElementById('globe-headline').classList.add('show');
+      }
+    } else if (phase === 'highlight') {
+      cam.position.x = camTarget.x + Math.sin(phaseT * 0.4) * 0.04;
+      cam.lookAt(0, 0, 0);
+      pulseT += dt * 2.2;
+      const ps = (Math.sin(pulseT) + 1) / 2;
+      pulseMat.opacity = ps * 0.7;
+      const sc = 1 + ps * 0.5;
+      pulse.scale.set(sc, sc, sc);
+      const sv2 = dot.getWorldPosition(new THREE.Vector3()).clone().project(cam);
+      const sx = (sv2.x * 0.5 + 0.5) * innerWidth, sy = (-sv2.y * 0.5 + 0.5) * innerHeight;
+      const ch = document.getElementById('crosshair'), sl = document.getElementById('sa-label');
+      ch.style.left = sx + 'px';
+      ch.style.top = sy + 'px';
+      sl.style.left = sx + 'px';
+      sl.style.top = sy + 'px';
+      if (phaseT > 3.5) { phase = 'fadeout'; phaseT = 0; hudStatus.textContent = 'LOADING PORTFOLIO...'; }
+    } else if (phase === 'fadeout') {
+      const p = Math.min(phaseT / 1.8, 1), e = eo(p);
+      gMat.transparent = true;
+      gMat.opacity = 1 - e;
+      wMat.opacity = 0.055 * (1 - e);
+      atmMat.opacity = 0.04 * (1 - e);
+      starMat.opacity = 0.35 * (1 - e);
+      if (p >= 1 && !done) { done = true; transitionToPortfolio(); }
+    }
+    renderer.render(scene, cam);
+  }
+  tick();
+})();
+
+function transitionToPortfolio() {
+  document.getElementById('globe-stage').classList.add('fade-out');
+  document.getElementById('portfolio').classList.add('visible');
+  setTimeout(() => document.getElementById('globe-stage').classList.add('gone'), 1500);
+  initPortfolio();
+}
+function skipIntro() { transitionToPortfolio(); }
+
+function initPortfolio() {
+  setTimeout(() => {
+    ['hero-tag', 'hero-name', 'hero-sub', 'hero-desc', 'hero-cta'].forEach((c, i) => {
+      setTimeout(() => { const el = document.querySelector('.' + c); if (el) el.classList.add('in'); }, i * 120);
+    });
+    setTimeout(() => { const statsRow = document.querySelector('.stats-row'); if (statsRow) statsRow.classList.add('in'); }, 620);
+  }, 500);
+  const sections = document.querySelectorAll('.section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('in'); observer.unobserve(entry.target); } });
+  }, { threshold: 0.1 });
+  sections.forEach(s => observer.observe(s));
+  const skillGroups = document.querySelectorAll('.skill-group');
+  const skillObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animated');
+        const fills = entry.target.querySelectorAll('.skill-bar-fill');
+        fills.forEach(fill => { const pct = fill.style.getPropertyValue('--pct'); if (pct) fill.style.width = pct; });
+        skillObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  skillGroups.forEach(g => skillObserver.observe(g));
+  const statNumbers = document.querySelectorAll('.stat-n');
+  const statObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.getAttribute('data-count'));
+        let cur = 0;
+        const steps = 1000 / 30;
+        const increment = target / steps;
+        const timer = setInterval(() => {
+          cur = Math.min(cur + increment, target);
+          el.textContent = Math.floor(cur);
+          if (cur >= target) clearInterval(timer);
+        }, 30);
+        statObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  statNumbers.forEach(s => statObserver.observe(s));
+}
+
+function sendContactMessage() {
+  const name = document.getElementById('contact-name')?.value || '';
+  const email = document.getElementById('contact-email')?.value || '';
+  const subject = document.getElementById('contact-subject')?.value || '';
+  const message = document.getElementById('contact-message')?.value || '';
+  if (!name || !email || !message) { alert('Please fill in your name, email, and message.'); return; }
+  window.location.href = `mailto:sam.mahlangu@example.com?subject=${encodeURIComponent(subject || 'Portfolio Inquiry')}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
+}
+
+
+document.querySelectorAll('.nav-links a, .nav-hire').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const targetId = link.getAttribute('href');
+    if (targetId && targetId !== '#') document.querySelector(targetId)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.section').forEach(s => { if (s.getBoundingClientRect().top < window.innerHeight - 100) s.classList.add('in'); });
+});
+</script>
+</body>
+</html>
