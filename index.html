@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sam Banele Mahlangu | Geomatics Portfolio</title>
+<title>Sam Banele Mahlangu | Geomatics & Geospatial Portfolio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -158,6 +158,25 @@ nav { display: flex; align-items: center; justify-content: space-between; paddin
 .proj-desc { font-size: 13px; color: var(--text-dim); line-height: 1.68; flex: 1; }
 .proj-stack { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 6px; }
 .stack-tag { font-family: 'Space Mono', monospace; font-size: 9px; padding: 5px 10px; border: 1px solid var(--muted2); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+/* PROJECTS PREVIEW */
+.projects-preview { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.projects-preview .proj-card { min-height: 100%; }
+.projects-preview .proj-title { padding-right: 30px; }
+.projects-preview .proj-desc { min-height: 86px; }
+.projects-cta { margin-top: 24px; display: flex; justify-content: center; }
+.projects-cta a { text-decoration: none; }
+.project-more {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 13px 22px; border: 1px solid var(--border-hi);
+  color: var(--green); background: transparent;
+  font-family: 'Space Mono', monospace; font-size: 10px;
+  letter-spacing: .14em; text-transform: uppercase;
+  transition: all .25s;
+}
+.project-more:hover { background: var(--green); color: var(--dark); transform: translateY(-2px); }
+@media (max-width: 900px) { .projects-preview { grid-template-columns: 1fr; } }
+
 
 /* CAROUSEL */
 .carousel-wrap { position: relative; overflow: hidden; background: var(--mid2); border: 1px solid var(--border); min-height: 165px; }
@@ -482,7 +501,7 @@ footer { padding: 40px 0; display: flex; align-items: center; justify-content: s
       <div class="nav-logo">SAM.MAHLANGU</div>
       <div class="nav-links">
         <a href="#about">About</a>
-        <a href="#projects">Projects</a>
+        <a href="projects.html">Projects</a>
         <a href="#skills">Skills</a>
         <a href="#experience">Experience</a>
         <a href="#contact">Contact</a>
@@ -606,79 +625,41 @@ footer { padding: 40px 0; display: flex; align-items: center; justify-content: s
       </div>
     </section>
 
-    <!-- PROJECTS -->
+    <!-- PROJECTS PREVIEW -->
     <section class="section" id="projects">
       <div class="sec-head">
         <div>
           <div class="sec-label">02 // Projects</div>
-          <div class="sec-title">Featured Work</div>
+          <div class="sec-title">Selected Work</div>
         </div>
         <div class="sec-meta">Geospatial Solutions</div>
       </div>
-      <div class="projects-grid">
 
-        <!-- 01: Mine Stability Analysis — Carousel with Modal -->
-        <div class="proj-card featured" data-num="01">
-          <div class="proj-body">
-            <span class="proj-tag">Industry · Mine GIS</span>
-            <div class="proj-title">Mine Stability Analysis — Goedehoop Colliery</div>
-            <p class="proj-desc">
-              Conducted a GIS-based underground stability assessment at Goedehoop Colliery (Dec 2024 – Jan 2025), using subsidence, seam depth, and geotechnical parameters to evaluate ground conditions. Spatial overlay and rule based classification were used to identify stable, moderately stable and high risk areas. <br> Approximately 353 hectares were identified as high risk, mainly linked to 2 seam workings, with additional smaller high risk areas from 5 seam and subsidence. More than 3000 hectares were found suitable for controlled post mining land use.
-            </p>
-<div class="proj-stack" style="margin-top: 15px;">
-  <a href="GH-SAM Mahlangu.pdf" download class="stack-tag" style="text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
-    📄 Download Presentation (PDF)
-  </a>
-</div>
-            <div class="proj-stack">
-              <span class="stack-tag">QGIS</span>
-              <span class="stack-tag">Risk Modelling</span>
-              <span class="stack-tag">Spatial Analysis</span>
-              <span class="stack-tag">Mine Rehabilitation</span>
-            </div>
-          </div>
-          <div class="proj-visual carousel-wrap" id="carousel-01">
-            <div class="carousel-track">
-              <div class="carousel-slide">
-                <img src="images/mine-stability-1.jpg" onclick="openImageModal('carousel-01', 0)">
-              </div>
-              <div class="carousel-slide">
-                <img src="images/mine-stability-2.jpg"  onclick="openImageModal('carousel-01', 1)">
-              </div>
-              <div class="carousel-slide">
-                <img src="images/mine-stability-3.jpg"  onclick="openImageModal('carousel-01', 2)">
-              </div>
-            </div>
-            <button class="car-btn car-prev" onclick="carMove('carousel-01',-1)">&#8249;</button>
-            <button class="car-btn car-next" onclick="carMove('carousel-01',1)">&#8250;</button>
-            <div class="car-dots" id="dots-carousel-01">
-              <span class="car-dot active"></span><span class="car-dot"></span><span class="car-dot"></span>
-            </div>
+      <div class="projects-preview">
+
+        <!-- 01: Mine Stability Analysis -->
+        <div class="proj-card" data-num="01">
+          <span class="proj-tag">Industry · Mine GIS</span>
+          <div class="proj-title">Mine Stability Analysis — Goedehoop Colliery</div>
+          <p class="proj-desc">
+            GIS-based underground stability assessment using subsidence, seam depth and geotechnical
+            parameters to identify high-risk areas and support controlled post-mining land use.
+          </p>
+          <div class="proj-stack">
+            <span class="stack-tag">QGIS</span>
+            <span class="stack-tag">Risk Modelling</span>
+            <span class="stack-tag">Spatial Analysis</span>
+            <span class="stack-tag">Mine Rehabilitation</span>
           </div>
         </div>
 
-       
-        
-        <!-- 02: Road Analysis — YouTube -->
+        <!-- 02: Road Analysis -->
         <div class="proj-card" data-num="02">
           <span class="proj-tag">Infrastructure · Transport GIS</span>
           <div class="proj-title">Road Analysis</div>
-          <div class="proj-yt-wrap">
-            <div class="proj-yt-thumb" onclick="openVideoModal('CPsHghxbGFQ')">
-              <img src="images/road-analysis.jpg" alt="Road Condition Survey" onerror="this.src='https://placehold.co/640x360/0a1a0f/00ff88?text=Road+Analysis+Demo'">
-              <div class="yt-play-btn">
-                <svg viewBox="0 0 68 48" width="56" height="40">
-                  <path d="M66.5 7.7c-.8-2.9-3-5.2-5.9-6C55.8.1 34 0 34 0S12.2.1 7.4 1.7c-2.9.8-5.1 3.1-5.9 6C0 12.5 0 24 0 24s0 11.5 1.5 16.3c.8 2.9 3 5.2 5.9 6C12.2 47.9 34 48 34 48s21.8-.1 26.6-1.7c2.9-.8 5.1-3.1 5.9-6C68 35.5 68 24 68 24S68 12.5 66.5 7.7z" fill="#ff0000" opacity="0.9"/>
-                  <path d="M27 34l18-10-18-10v20z" fill="white"/>
-                </svg>
-              </div>
-              <div class="yt-label">▶ Watch Demo</div>
-            </div>
-          </div>
           <p class="proj-desc">
-            Spatial analysis of road network conditions and infrastructure quality using GIS-based 
-            assessment techniques. Classified road segments by condition rating, identified priority 
-            maintenance zones for infrastructure planning.
+            Spatial analysis of road network conditions and infrastructure quality, classifying road
+            segments by condition and identifying priority maintenance zones for planning.
           </p>
           <div class="proj-stack">
             <span class="stack-tag">QGIS</span>
@@ -688,82 +669,26 @@ footer { padding: 40px 0; display: flex; align-items: center; justify-content: s
           </div>
         </div>
 
-        <!-- 03: Residential Development Intelligence Platform — Image Card -->
+        <!-- 03: Residential Development Intelligence Platform -->
         <div class="proj-card" data-num="03">
-          <span class="proj-tag">Spatial Decision Support System · Web GIS</span>
+          <span class="proj-tag">Spatial Decision Support · Web GIS</span>
           <div class="proj-title">Residential Development Intelligence Platform</div>
-          <div class="proj-yt-wrap">
-            <div class="proj-yt-thumb" onclick="openVideoModal('DooqNVEFTU8')">
-              <img src="images/2nd Thumbnail.jpg" alt="Residential development intelligence platform thumbnail" onerror="this.src='https://placehold.co/640x360/0a1a0f/00ff88?text=Residential+Development'">
-              <div class="yt-play-btn">
-                <svg viewBox="0 0 68 48" width="56" height="40">
-                  <path d="M66.5 7.7c-.8-2.9-3-5.2-5.9-6C55.8.1 34 0 34 0S12.2.1 7.4 1.7c-2.9.8-5.1 3.1-5.9 6C0 12.5 0 24 0 24s0 11.5 1.5 16.3c.8 2.9 3 5.2 5.9 6C12.2 47.9 34 48 34 48s21.8-.1 26.6-1.7c2.9-.8 5.1-3.1 5.9-6C68 35.5 68 24 68 24S68 12.5 66.5 7.7z" fill="#ff0000" opacity="0.9"/>
-                  <path d="M27 34l18-10-18-10v20z" fill="white"/>
-                </svg>
-              </div>
-              <div class="yt-label">▶ Watch Demo</div>
-            </div>
-          </div>
           <p class="proj-desc">
-            Developed a web-based geospatial platform that evaluates cadastral parcels for residential development suitability. The application applies a weighted multi-criteria suitability analysis using road accessibility, school accessibility, shopping accessibility, parcel size, and terrain slope to classify land suitability. Results are presented through an interactive dashboard with spatial filtering, parcel inspection, analytics, and reporting to support data-driven land development decisions.
+            Web-based geospatial platform using weighted multi-criteria analysis to evaluate cadastral
+            parcels for residential development suitability.
           </p>
           <div class="proj-stack">
-            <span class="stack-tag">QGIS</span>
-            <span class="stack-tag">Google Earth Engine</span>
             <span class="stack-tag">Leaflet.js</span>
-            <span class="stack-tag">HTML</span>
-            <span class="stack-tag">CSS</span>
             <span class="stack-tag">JavaScript</span>
-            <span class="stack-tag">Chart.js</span>
             <span class="stack-tag">GeoJSON</span>
             <span class="stack-tag">MCDA</span>
-            <span class="stack-tag">Spatial Decision Support</span>
           </div>
         </div>
 
-        <!-- 04: Construction Monitoring — Carousel with Modal -->
-        <div class="proj-card featured" data-num="04">
-          <div class="proj-body">
-            <span class="proj-tag">Infrastructure · Remote Sensing</span>
-            <div class="proj-title">Construction Monitoring</div>
-            <p class="proj-desc">
-              Geospatial monitoring of construction progress using multi-temporal satellite imagery 
-              and change detection techniques. Tracked land transformation, site development phases, 
-              and earthworks activity.            </p>
-            <div class="proj-stack">
-              <span class="stack-tag">Remote Sensing</span>
-              <span class="stack-tag">Change Detection</span>
-              <span class="stack-tag">QGIS</span>
-              <span class="stack-tag">Satellite Imagery</span>
-            </div>
-          </div>
-          <div class="proj-visual carousel-wrap" id="carousel-05">
-            <div class="carousel-track">
-              <div class="carousel-slide">
-                <img src="images/construction-1.jpg"  onclick="openImageModal('carousel-05', 0)">
-              </div>
-              <div class="carousel-slide">
-                <img src="images/construction-2.jpg" onclick="openImageModal('carousel-05', 1)">
-              </div>
-              <div class="carousel-slide">
-                <img src="images/construction-3.jpg"  onclick="openImageModal('carousel-05', 2)">
-              </div>
- <div class="carousel-slide">
-                <img src="images/construction-4.jpg"  onclick="openImageModal('carousel-05', 3)">
-              </div>
- <div class="carousel-slide">
-                <img src="images/construction-5.jpg"  onclick="openImageModal('carousel-05', 4)">
-              </div>
+      </div>
 
-            </div>
-            <button class="car-btn car-prev" onclick="carMove('carousel-05',-1)">&#8249;</button>
-            <button class="car-btn car-next" onclick="carMove('carousel-05',1)">&#8250;</button>
-            <div class="car-dots" id="dots-carousel-05">
-              <span class="car-dot active"></span><span class="car-dot"></span><span class="car-dot"></span>
-            </div>
-          </div>
-        </div>
-
+      <div class="projects-cta">
+        <a href="projects.html" class="project-more">View All Projects <span>→</span></a>
       </div>
     </section>
 
@@ -1218,7 +1143,19 @@ function transitionToPortfolio() {
 }
 function skipIntro() { transitionToPortfolio(); }
 
-setTimeout(transitionToPortfolio, 8000);
+// Play the cinematic globe only on the first visit in this browser tab/session.
+// Returning from projects.html now opens the portfolio immediately instead of
+// replaying the intro animation.
+const INTRO_KEY = 'samPortfolioIntroSeen';
+const shouldPlayIntro = !sessionStorage.getItem(INTRO_KEY);
+
+if (shouldPlayIntro) {
+  sessionStorage.setItem(INTRO_KEY, '1');
+  setTimeout(transitionToPortfolio, 8000);
+} else {
+  // Returning visitor: skip the globe and show the portfolio immediately.
+  transitionToPortfolio();
+}
 
 function initPortfolio() {
   setTimeout(() => {
@@ -1277,9 +1214,15 @@ function sendContactMessage() {
 
 document.querySelectorAll('.nav-links a, .nav-hire').forEach(link => {
   link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const targetId = link.getAttribute('href');
-    if (targetId && targetId !== '#') document.querySelector(targetId)?.scrollIntoView({ behavior: 'smooth' });
+    const target = link.getAttribute('href');
+    if (!target || target === '#') return;
+
+    // Only intercept same-page anchor links.
+    // Normal page links such as projects.html must be allowed to navigate.
+    if (target.startsWith('#')) {
+      e.preventDefault();
+      document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+    }
   });
 });
 document.addEventListener('DOMContentLoaded', () => {
