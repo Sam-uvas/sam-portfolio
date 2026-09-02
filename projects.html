@@ -416,7 +416,7 @@ footer{
 <div class="video-modal" id="videoModal" aria-hidden="true">
   <div class="video-modal-shell" role="dialog" aria-modal="true" aria-label="Project live demo">
     <button class="video-close" type="button" onclick="closeVideoModal()" aria-label="Close demo">×</button>
-    <div class="video-modal-top">LIVE DEMO · WILDLANDS PROJECT WALKTHROUGH</div>
+    <div class="video-modal-top" id="videoModalTitle">LIVE DEMO · PROJECT WALKTHROUGH</div>
     <div class="video-frame">
       <iframe
         id="demoFrame"
@@ -564,13 +564,13 @@ footer{
         <span>QGIS</span><span>Network Analysis</span><span>Infrastructure GIS</span><span>Spatial Classification</span>
       </div>
       <div class="actions">
-        <button class="action demo-action" type="button" onclick="openVideoModal('CPsHghxbGFQ')">▶ Live Demo</button>
+        <button class="action demo-action" type="button" onclick="openVideoModal('CPsHghxbGFQ', 'ROAD ANALYSIS WALKTHROUGH')">▶ Live Demo</button>
       </div>
     </div>
     <div class="visual">
       <img src="images/road-analysis.jpg" alt="Road analysis project"
            onerror="this.style.display='none'">
-      <button class="video" type="button" onclick="openVideoModal('CPsHghxbGFQ')" aria-label="Open Road Analysis live demo">
+      <button class="video" type="button" onclick="openVideoModal('CPsHghxbGFQ', 'ROAD ANALYSIS WALKTHROUGH')" aria-label="Open Road Analysis live demo">
         <div class="play">▶</div>
       </button>
       <div class="visual-fallback">ROAD NETWORK<br>ANALYSIS</div>
@@ -618,7 +618,7 @@ footer{
       </div>
 
       <div class="actions">
-        <button class="action demo-action" type="button" onclick="openVideoModal('pxh0ZF8myto')">
+        <button class="action demo-action" type="button" onclick="openVideoModal('U_NduqWr774', 'WILDLANDS PROJECT WALKTHROUGH')">
           ↗ Live Demo
         </button>
       </div>
@@ -627,7 +627,7 @@ footer{
     <div class="visual">
       <img src="images/3rd thumbnail.png" alt="Wildlands Restoration Intelligence Platform"
            onerror="this.style.display='none'">
-      <button class="video" type="button" onclick="openVideoModal('pxh0ZF8myto')" aria-label="Open Wildlands live demo">
+      <button class="video" type="button" onclick="openVideoModal('U_NduqWr774', 'WILDLANDS PROJECT WALKTHROUGH')" aria-label="Open Wildlands live demo">
         <div class="play">▶</div>
       </button>
       <div class="visual-fallback">WILDLANDS<br>RESTORATION INTELLIGENCE</div>
@@ -670,13 +670,13 @@ footer{
         <span>MCDA</span><span>Spatial Decision Support</span>
       </div>
       <div class="actions">
-        <button class="action demo-action" type="button" onclick="openVideoModal('DooqNVEFTU8')">▶ Live Demo</button>
+        <button class="action demo-action" type="button" onclick="openVideoModal('DooqNVEFTU8', 'RESIDENTIAL DEVELOPMENT WALKTHROUGH')">▶ Live Demo</button>
       </div>
     </div>
     <div class="visual">
       <img src="images/2nd Thumbnail.jpg" alt="Residential Development Intelligence Platform"
            onerror="this.style.display='none'">
-      <button class="video" type="button" onclick="openVideoModal('DooqNVEFTU8')" aria-label="Open Residential Development live demo">
+      <button class="video" type="button" onclick="openVideoModal('DooqNVEFTU8', 'RESIDENTIAL DEVELOPMENT WALKTHROUGH')" aria-label="Open Residential Development live demo">
         <div class="play">▶</div>
       </button>
       <div class="visual-fallback">RESIDENTIAL DEVELOPMENT<br>INTELLIGENCE</div>
@@ -826,13 +826,19 @@ document.getElementById('imageModal')?.addEventListener('click', function(e){
 });
 
 
-function openVideoModal(videoId){
+function openVideoModal(videoId, projectName = 'PROJECT WALKTHROUGH'){
   const modal = document.getElementById('videoModal');
   const frame = document.getElementById('demoFrame');
+  const title = document.getElementById('videoModalTitle');
   if(!modal || !frame || !videoId) return;
 
   frame.src = 'https://www.youtube.com/embed/' + videoId +
               '?autoplay=1&rel=0&modestbranding=1';
+
+  if(title){
+    title.textContent = 'LIVE DEMO · ' + projectName;
+  }
+
   modal.classList.add('active');
   modal.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
